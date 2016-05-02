@@ -1,0 +1,13 @@
+[submodule "external/vexcl"]
+	path = external/vexcl
+	url = https://github.com/ddemidov/vexcl.git
+[submodule "external/cub"]
+	path = external/cub
+	url = https://github.com/NVlabs/cub.git
+	branch = 1.5.2
+[submodule "external/moderngpu"]
+	path = external/moderngpu
+	url = https://github.com/moderngpu/moderngpu.git
+[submodule "external/catch"]
+	path = external/catch
+	url = https://github.com/philsquared/Catch.git

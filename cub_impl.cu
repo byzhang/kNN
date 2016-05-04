@@ -90,16 +90,16 @@ std::vector<uint32_t> kNN::impl::search(const std::vector<uint32_t>& query, uint
   CubDebugReturn(cudaMemcpy(query_device, query.data(), sizeof(uint32_t) * num_dim_, cudaMemcpyHostToDevice), indexes);
 
   // TODO: thread local
-  DoubleBuffer<uint16_t> d_keys;
+  DoubleBuffer<KEY_T> d_keys;
   DoubleBuffer<uint32_t> d_values;
-  CubDebugReturn(allocator_.DeviceAllocate((void**)&d_keys.d_buffers[0], sizeof(uint16_t) * num_data_), indexes);
-  CubDebugReturn(allocator_.DeviceAllocate((void**)&d_keys.d_buffers[1], sizeof(uint16_t) * num_data_), indexes);
+  CubDebugReturn(allocator_.DeviceAllocate((void**)&d_keys.d_buffers[0], sizeof(KEY_T) * num_data_), indexes);
+  CubDebugReturn(allocator_.DeviceAllocate((void**)&d_keys.d_buffers[1], sizeof(KEY_T) * num_data_), indexes);
   CubDebugReturn(allocator_.DeviceAllocate((void**)&d_values.d_buffers[0], sizeof(uint32_t) * num_data_), indexes);
   CubDebugReturn(allocator_.DeviceAllocate((void**)&d_values.d_buffers[1], sizeof(uint32_t) * num_data_), indexes);
 
   auto* keys = d_keys.d_buffers[0];
   auto* values = d_values.d_buffers[0];
-  hamming_distance<<<tex_height_, num_data_per_block, num_dim_>>>(keys, values, query_device, tex_, tex_height_, num_dim_, num_data_per_block);
+  hamming_distance<<<tex_height_, num_data_per_block, num_dim_ * sizeof(uint32_t)>>>(keys, values, query_device, tex_, tex_height_, num_dim_, num_data_per_block);
 
   // Allocate temporary storage
   size_t temp_storage_bytes = 0;

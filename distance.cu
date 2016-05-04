@@ -5,7 +5,7 @@
 
 #include "distance.h"
 
-__global__ void hamming_distance(uint16_t* keys, uint32_t *values, const uint32_t *query,
+__global__ void hamming_distance(KEY_T* keys, uint32_t *values, const uint32_t *query,
     const cudaTextureObject_t& tex, unsigned int tex_height, int num_dim, int num_data_per_block) {
   int tu = blockDim.x * blockIdx.x;
   int tv = threadIdx.x;
@@ -19,7 +19,7 @@ __global__ void hamming_distance(uint16_t* keys, uint32_t *values, const uint32_
 
     __syncthreads();
 
-    uint16_t count = 0;
+    KEY_T count = 0;
 
     for (int i = 0; i<num_dim; ++i) {
       unsigned int m = tex2D<unsigned int>(tex, tv * num_dim + i, tu);

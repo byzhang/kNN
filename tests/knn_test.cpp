@@ -81,15 +81,15 @@ TEST_CASE("vector 1", "[util]") {
   }
 }
 
-TEST_CASE("1M x 10", "[knn]") {
-  const static uint32_t num_data = 1024 * 1024;
-  const static uint32_t num_dim = 10;
+TEST_CASE("64M x 32", "[knn]") {
+  const static uint32_t num_data = 64 * 1024 * 1024;
+  const static uint32_t num_dim = 32;
   vector<uint32_t> data(num_data * num_dim);
   auto it = data.begin();
   for (uint32_t i = 0; i < num_data; ++i, it += num_dim) {
     int_to_vector(i, it, it + num_dim);
   }
-  LOG(ERROR) << "init 1M x 10 data";
+  LOG(ERROR) << "init 64M x 32 data";
 
   kNN knn(data, num_data, num_dim);
 

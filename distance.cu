@@ -7,7 +7,7 @@
 
 __global__ void hamming_distance(KEY_T* keys, uint32_t *values, const uint32_t *query,
     cudaTextureObject_t tex, unsigned int tex_height, int num_dim, int num_data_per_block) {
-  int tu = blockDim.x * blockIdx.x;
+  int tu = blockIdx.x;
   int tv = threadIdx.x;
 
   if (tu < tex_height && tv < num_data_per_block) {

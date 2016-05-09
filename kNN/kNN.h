@@ -11,11 +11,21 @@
 #include <functional>
 
 class kNN {
+ 
+ // This is to workaround a gcc 4.8 bug, see below:
+ // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=59482
+ public:
+  class impl;
+ private:
+  std::unique_ptr<impl> self;
+    
+/* This is what I desired, but gcc 4.8 has a bug
  private:
   class impl;
   friend class kNN_Impl_CUB;
   friend class kNN_Impl_MGPU;
   std::unique_ptr<impl> self;
+ */
  
  public:
   kNN(const std::vector<uint32_t>& data, uint32_t num_data, uint32_t num_dim, 

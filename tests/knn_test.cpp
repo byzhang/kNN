@@ -36,7 +36,7 @@ string vector_to_string(IT begin, IT end) {
 }
 
 TEST_CASE("64M x 32 CUB", "[knn_cub]") {
-  const static uint32_t num_data = 1 * 1024 * 1024;
+  const static uint32_t num_data = 64 * 1024 * 1024;
   const static uint32_t num_dim = 32;
   vector<uint32_t> data(num_data * num_dim);
   LOG(ERROR) << "generating test data";
@@ -85,7 +85,7 @@ TEST_CASE("64M x 32 CUB", "[knn_cub]") {
 }
 
 TEST_CASE("64M x 32 MGPU", "[knn_mgpu]") {
-  const static uint32_t num_data = 1 * 1024 * 1024;
+  const static uint32_t num_data = 64 * 1024 * 1024;
   const static uint32_t num_dim = 32;
   vector<uint32_t> data(num_data * num_dim);
   LOG(ERROR) << "generating test data";

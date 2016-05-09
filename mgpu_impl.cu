@@ -15,6 +15,7 @@ kNN_Impl_MGPU::~kNN_Impl_MGPU()
 {
 }
 
+//potential mem leak
 #define CudaDebugReturn(e, r) if (cudaSuccess != e) { return r; }
 
 std::vector<uint32_t> kNN_Impl_MGPU::search(const std::vector<uint32_t>& query, uint32_t top_k)
@@ -58,7 +59,7 @@ std::vector<uint32_t> kNN_Impl_MGPU::search(const std::vector<uint32_t>& query, 
     
     hamming_distance<<<tex_height_, num_data_per_block, num_dim_ * sizeof(uint32_t)>>>(d_keys, d_values, d_query, tex_, tex_height_, num_dim_, num_data_per_block);
 
-    mgpu::mergesort(d_keys, d_values, num_data_, mgpu::less_t<uint32_t>(), context);
+    mgpu::mergesort(d_keys, d_values, num_data_, mgpu::less_t<KEY_T>(), context);
     context.synchronize();
     // copy to host
     indexes.resize(min(top_k, num_data_));

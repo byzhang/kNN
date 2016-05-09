@@ -10,6 +10,8 @@
 #include <omp.h>
 #include <glog/logging.h>
 #include <vector>
+#include "cub_impl.h"
+#include "mgpu_impl.h"
 
 using namespace std;
 
@@ -34,7 +36,7 @@ string vector_to_string(IT begin, IT end) {
 }
 
 TEST_CASE("64M x 32", "[knn]") {
-  const static uint32_t num_data = 64 * 1024 * 1024;
+  const static uint32_t num_data = 1 * 1024 * 1024;
   const static uint32_t num_dim = 32;
   vector<uint32_t> data(num_data * num_dim);
   LOG(ERROR) << "generating test data";
@@ -44,7 +46,8 @@ TEST_CASE("64M x 32", "[knn]") {
   }
 
   double start = omp_get_wtime();
-  kNN knn(data, num_data, num_dim);
+  //kNN knn(data, num_data, num_dim, kNN::implFactory<kNN_Impl_CUB>);
+  kNN knn(data, num_data, num_dim, kNN::implFactory<kNN_Impl_MGPU>);
   double end = omp_get_wtime();
   double init_time = end - start;
   LOG(ERROR) << "init " << sizeof(uint32_t) * data.size() / 1024 / 1024 << "M bytes in " << init_time << "s";

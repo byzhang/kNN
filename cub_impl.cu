@@ -56,7 +56,7 @@ std::vector<uint32_t> kNN_Impl_CUB::search(const std::vector<uint32_t>& query, u
 
   auto* keys = d_keys.d_buffers[0];
   auto* values = d_values.d_buffers[0];
-  hamming_distance<<<tex_height_, num_data_per_block, num_dim_ * sizeof(uint32_t)>>>(keys, values, d_query, tex_, tex_height_, num_dim_, num_data_per_block);
+  hamming_distance<<<tex_height_, num_data_per_block, num_dim_ * sizeof(uint32_t)>>>(keys, values, d_query, tex_, tex_height_, num_dim_, num_data_per_block, num_data_);
 
   // Allocate temporary storage
   size_t temp_storage_bytes = 0;

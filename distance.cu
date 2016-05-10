@@ -6,11 +6,12 @@
 #include "distance.h"
 
 __global__ void hamming_distance(KEY_T* keys, uint32_t *values, const uint32_t *query,
-    cudaTextureObject_t tex, unsigned int tex_height, int num_dim, int num_data_per_block) {
+    cudaTextureObject_t tex, unsigned int tex_height, int num_dim, int num_data_per_block, int overall_data) {
   int tu = blockIdx.x;
   int tv = threadIdx.x;
+  unsigned int id = tu*num_data_per_block + tv;
 
-  if (tu < tex_height && tv < num_data_per_block) {
+  if (id < overall_data) {
     extern __shared__ uint32_t query_local[];
 
     if (tv < num_dim) {
@@ -26,8 +27,6 @@ __global__ void hamming_distance(KEY_T* keys, uint32_t *values, const uint32_t *
       count += __popc(m ^ query_local[i]);
 
     }
-
-    unsigned int id = tu*num_data_per_block + tv;
 
     keys[id] = count;
     values[id] = id;

@@ -57,7 +57,7 @@ std::vector<uint32_t> kNN_Impl_MGPU::search(const std::vector<uint32_t>& query, 
         return indexes;
     }
     
-    hamming_distance<<<tex_height_, num_data_per_block, num_dim_ * sizeof(uint32_t)>>>(d_keys, d_values, d_query, tex_, tex_height_, num_dim_, num_data_per_block);
+    hamming_distance<<<tex_height_, num_data_per_block, num_dim_ * sizeof(uint32_t)>>>(d_keys, d_values, d_query, tex_, tex_height_, num_dim_, num_data_per_block, num_data_);
 
     mgpu::mergesort(d_keys, d_values, num_data_, mgpu::less_t<KEY_T>(), context);
     context.synchronize();

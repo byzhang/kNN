@@ -13,6 +13,6 @@ typedef uint16_t KEY_T;
 // keys: distance
 // values: index
 __global__ void hamming_distance(KEY_T* keys, uint32_t *values, const uint32_t *query,
-    cudaTextureObject_t tex, unsigned int tex_height, int num_dim, int num_data_per_block);
+    cudaTextureObject_t tex, unsigned int tex_height, int num_dim, int num_data_per_block, int overall_data);
 
 #endif /* !CloudBrain_DISTANCE_H */

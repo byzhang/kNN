@@ -33,7 +33,7 @@ include_directories(
 
 find_package(CUDA REQUIRED)
 include_directories( ${CUDA_INCLUDE_DIRS} )
-set(BACKEND_LIBS ${CUDA_CUDA_LIBRARY})
+set(BACKEND_LIBS ${CUDA_LIBRARIES})
 
 #----------------------------------------------------------------------------
 # Find OpenMP

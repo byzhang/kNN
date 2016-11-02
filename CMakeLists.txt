@@ -63,9 +63,14 @@ endif ()
 list(APPEND CUDA_NVCC_FLAGS "-arch=sm_30;-std=c++11;-O3;--use_fast_math;--expt-extended-lambda")
 SET(CUDA_PROPAGATE_HOST_FLAGS OFF)
 
+cuda_add_library(knn_impl kNN/kNN_impl.cu kNN/kNN_impl.h)
 cuda_add_library(distance distance.cu distance.h)
 cuda_add_library(cub_knn cub_impl.cu cub_impl.h)
+cuda_add_library(mgpu_knn mgpu_impl.cu mgpu_impl.h)
 target_link_libraries(cub_knn
+  mgpu_knn
+  distance
+  knn_impl
   glog
 )
 
@@ -78,7 +83,9 @@ set(TEST unit_tests)
 file(GLOB TEST_FILES tests/unit_tests.cpp tests/*_test.cpp)
 add_executable(${TEST} ${TEST_FILES})
 target_link_libraries(${TEST}
+  knn_impl
   kNN
+  mgpu_knn
   cub_knn
   distance
   ${BACKEND_LIBS}

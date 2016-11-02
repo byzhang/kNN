@@ -5,13 +5,15 @@
 
 #include "kNN/kNN.h"
 #include "cub_impl.h"
+#include "mgpu_impl.h"
 
 #include <memory>
 
 using namespace std;
 
-kNN::kNN(const std::vector<uint32_t>& data, uint32_t num_data, uint32_t num_dim)
-  : self{unique_ptr<kNN::impl>(new kNN::impl(data, num_data, num_dim))} {
+kNN::kNN(const std::vector<uint32_t>& data, uint32_t num_data, uint32_t num_dim,
+         std::function<impl* (const std::vector<uint32_t>&, uint32_t, uint32_t)> factory)
+  : self(unique_ptr<impl>(factory(data, num_data, num_dim))) {
 }
 
 std::vector<uint32_t> kNN::search(const std::vector<uint32_t>& query, uint32_t top_k) {

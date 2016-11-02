@@ -15,62 +15,19 @@
 using namespace cub;
 using namespace std;
 
-static const uint32_t num_data_per_block = 1024;
+//static const uint32_t num_data_per_block = 1024;
 static cub::CachingDeviceAllocator allocator_;
 
-kNN::impl::~impl() {
-  if (tex_) {
-    cudaDestroyTextureObject(tex_);
-  }
-  if (data_) {
-    cudaFreeArray(data_);
-  }
+kNN_Impl_CUB::~kNN_Impl_CUB() {
 }
 
-kNN::impl::impl(const std::vector<uint32_t>& data, uint32_t num_data, uint32_t num_dim)
-  : num_data_(num_data), num_dim_(num_dim)
-  , tex_height_(num_data / num_data_per_block + ((num_data % num_data_per_block)? 1: 0)) {
-  CHECK(data.size() == num_data * num_dim) << "size mismatch:"
-      << "data = " << data.size()
-      << ", num_data * num_dim = " << num_data * num_dim;
-
-  // allocate array
-  auto channelDesc = cudaCreateChannelDesc(32, 0, 0, 0, cudaChannelFormatKindUnsigned);
-  auto error = cudaMallocArray(&data_, &channelDesc, num_dim * num_data_per_block, tex_height_);
-  CHECK(error == cudaSuccess) << "error " << error << " when allocating data_ "
-                              << "num_dim:" << num_dim_ << "; num_data:" << num_data_ << "; num_data_per_block:" << num_data_per_block
-                              << "; tex_height:" << tex_height_;
-
-  // memcpy array
-  error = cudaMemcpyToArray(data_, 0, 0, data.data(), num_data_ * num_dim_ * sizeof(uint32_t), cudaMemcpyHostToDevice);
-  CHECK(error == cudaSuccess) << "error " << error << " when copying to data_"
-                              << "num_dim:" << num_dim_ << "; num_data:" << num_data_ << "; num_data_per_block:" << num_data_per_block
-                              << "; tex_height:" << tex_height_;
-
-  struct cudaResourceDesc resDesc;
-  memset(&resDesc, 0, sizeof(resDesc));
-  resDesc.resType = cudaResourceTypeArray;
-  resDesc.res.array.array = data_;
-
-  // Specify texture object parameters
-  struct cudaTextureDesc texDesc;
-  memset(&texDesc, 0, sizeof(texDesc));
-  texDesc.addressMode[0] = cudaAddressModeWrap;
-  texDesc.addressMode[1] = cudaAddressModeWrap;
-  texDesc.filterMode = cudaFilterModePoint;
-  texDesc.readMode = cudaReadModeElementType;
-  texDesc.normalizedCoords = 0;
-
-  // Create texture object
-  error = cudaCreateTextureObject(&tex_, &resDesc, &texDesc, NULL);
-  CHECK(error == cudaSuccess) << "error " << error << " when copying to data_"
-                              << "num_dim:" << num_dim_ << "; num_data:" << num_data_ << "; num_data_per_block:" << num_data_per_block
-                              << "; tex_height:" << tex_height_;
+kNN_Impl_CUB::kNN_Impl_CUB(const std::vector<uint32_t>& data, uint32_t num_data, uint32_t num_dim)
+  : kNN::impl(data, num_data, num_dim) {
 }
 
 #define CubDebugReturn(e, r) if (cub::Debug((e), __FILE__, __LINE__)) { return r; }
 
-std::vector<uint32_t> kNN::impl::search(const std::vector<uint32_t>& query, uint32_t top_k) {
+std::vector<uint32_t> kNN_Impl_CUB::search(const std::vector<uint32_t>& query, uint32_t top_k) {
   std::vector<uint32_t> indexes{};
   if (query.size() != num_dim_) {
     LOG_EVERY_N(ERROR, 10000) << "size mismatch:"
@@ -80,14 +37,14 @@ std::vector<uint32_t> kNN::impl::search(const std::vector<uint32_t>& query, uint
   }
 
   // TODO: thread local
-  uint32_t* query_device = nullptr;
-  auto error = allocator_.DeviceAllocate((void**)&query_device, sizeof(uint32_t) * num_dim_);
+  uint32_t* d_query = nullptr;
+  auto error = allocator_.DeviceAllocate((void**)&d_query, sizeof(uint32_t) * num_dim_);
   if (error != cudaSuccess) {
-    LOG_EVERY_N(ERROR, 1000) << "error " << error << " when aollcating query_device:" << num_dim_;
+    LOG_EVERY_N(ERROR, 1000) << "error " << error << " when aollcating d_query:" << num_dim_;
     return indexes;
   }
 
-  CubDebugReturn(cudaMemcpy(query_device, query.data(), sizeof(uint32_t) * num_dim_, cudaMemcpyHostToDevice), indexes);
+  CubDebugReturn(cudaMemcpy(d_query, query.data(), sizeof(uint32_t) * num_dim_, cudaMemcpyHostToDevice), indexes);
 
   // TODO: thread local
   DoubleBuffer<KEY_T> d_keys;
@@ -99,7 +56,7 @@ std::vector<uint32_t> kNN::impl::search(const std::vector<uint32_t>& query, uint
 
   auto* keys = d_keys.d_buffers[0];
   auto* values = d_values.d_buffers[0];
-  hamming_distance<<<tex_height_, num_data_per_block, num_dim_ * sizeof(uint32_t)>>>(keys, values, query_device, tex_, tex_height_, num_dim_, num_data_per_block);
+  hamming_distance<<<tex_height_, num_data_per_block, num_dim_ * sizeof(uint32_t)>>>(keys, values, d_query, tex_, tex_height_, num_dim_, num_data_per_block, num_data_);
 
   // Allocate temporary storage
   size_t temp_storage_bytes = 0;
@@ -115,6 +72,14 @@ std::vector<uint32_t> kNN::impl::search(const std::vector<uint32_t>& query, uint
   // copy to host
   indexes.resize(min(top_k, num_data_));
   CubDebugReturn(cudaMemcpy(indexes.data(), d_values.Current(), sizeof(uint32_t) * indexes.size(), cudaMemcpyDeviceToHost), indexes);
+
+  // cleanup
+  if (d_keys.d_buffers[0]) CubDebugExit(allocator_.DeviceFree(d_keys.d_buffers[0]));
+  if (d_keys.d_buffers[1]) CubDebugExit(allocator_.DeviceFree(d_keys.d_buffers[1]));
+  if (d_values.d_buffers[0]) CubDebugExit(allocator_.DeviceFree(d_values.d_buffers[0]));
+  if (d_values.d_buffers[1]) CubDebugExit(allocator_.DeviceFree(d_values.d_buffers[1]));
+  if (d_temp_storage) CubDebugExit(allocator_.DeviceFree(d_temp_storage));
+  if (d_query) CubDebugExit(allocator_.DeviceFree(d_query));
 
   return indexes;
 }
